@@ -30,6 +30,15 @@ test("select column with alias", () => {
     assert.equal(sql.compile(query), "SELECT author.id AS author_id FROM author");
 });
 
+test("select from table with alias", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const aliasedAuthor = Author.as("a");
+    const query = sql.from(aliasedAuthor).select(aliasedAuthor.c.id);
+    assert.equal(sql.compile(query), "SELECT a.id FROM author AS a");
+});
+
 test("inner join", () => {
     const Author = sql.table("author", {
         id: sql.column({name: "id"})

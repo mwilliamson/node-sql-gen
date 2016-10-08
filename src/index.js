@@ -7,7 +7,27 @@ export function table(name, columns) {
 class Table {
     constructor(name, columns) {
         this.name = name;
-        this.c = mapValues(columns, column => new BoundColumn({table: this, column}));
+        this.columns = columns;
+        this.c = mapValues(columns, column => new BoundColumn({selectable: this, column}));
+    }
+    
+    as(alias) {
+        return new AliasedTable(this, alias);
+    }
+}
+
+class AliasedTable {
+    constructor(table, alias) {
+        this._table = table;
+        this.name = alias;
+        this.c = mapValues(table.columns, column => new BoundColumn({
+            selectable: this,
+            column: column
+        }));
+    }
+    
+    compile() {
+        return toSelectable(this._table).compile() + " AS " + this.name;
     }
 }
 
@@ -38,7 +58,7 @@ class BoundColumn {
     }
     
     compile() {
-        let sql = this._.table.name + "." + this._.column.name;
+        let sql = this._.selectable.name + "." + this._.column.name;
         if (this._.alias) {
             sql += " AS " + this._.alias;
         }
@@ -51,7 +71,11 @@ export function from(selectable) {
 }
 
 function toSelectable(selectable) {
-    return new FromClause(selectable);
+    if (selectable instanceof Table) {
+        return new FromClause(selectable);
+    } else {
+        return selectable;
+    }
 }
 
 class FromClause {
