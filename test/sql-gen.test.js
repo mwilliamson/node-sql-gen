@@ -29,3 +29,18 @@ test("select column with alias", () => {
     const query = sql.from(Author).select(Author.c.id.as("author_id"));
     assert.equal(sql.compile(query), "SELECT author.id AS author_id FROM author");
 });
+
+test("inner join", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const Book = sql.table("book", {
+        id: sql.column({name: "id"}),
+        authorId: sql.column({name: "author_id"})
+    });
+    const query = sql
+        .from(Author)
+        .join(Book, sql.eq(Author.c.id, Book.c.authorId))
+        .select(Author.c.id, Book.c.id);
+    assert.equal(sql.compile(query), "SELECT author.id, book.id FROM author JOIN book ON author.id = book.author_id");
+});

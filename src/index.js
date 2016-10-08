@@ -47,7 +47,11 @@ class BoundColumn {
 }
 
 export function from(selectable) {
-    return new Query({selectable: new FromClause(selectable)});
+    return new Query({selectable: toSelectable(selectable)});
+}
+
+function toSelectable(selectable) {
+    return new FromClause(selectable);
 }
 
 class FromClause {
@@ -60,9 +64,26 @@ class FromClause {
     }
 }
 
+export function eq(left, right) {
+    return new BinaryOperation("=", left, right);
+}
+
+class BinaryOperation {
+    constructor(operator, left, right) {
+        this._operator = operator;
+        this._left = left;
+        this._right = right;
+    }
+    
+    compile() {
+        return this._left.compile() + " " + this._operator + " " + this._right.compile();
+    }
+}
+
 class Query {
-    constructor(options) {
+    constructor({...options}) {
         this._ = options;
+        this._.joins = this._.joins || [];
     }
     
     _copy(options) {
@@ -72,16 +93,34 @@ class Query {
         });
     }
     
+    join(selectable, condition) {
+        const join = {
+            selectable: toSelectable(selectable),
+            condition
+        };
+        return this._copy({
+            joins: this._.joins.concat([join])
+        });
+    }
+    
     select(...columns) {
         return this._copy({columns: columns});
     }
     
     compile() {
-        return "SELECT " + this._compileColumns() + " FROM " + this._.selectable.compile();
+        return "SELECT " + this._compileColumns() + " FROM " + this._.selectable.compile() + this._compileJoins();
     }
     
     _compileColumns() {
         return this._.columns.map(column => column.compile()).join(", ");
+    }
+    
+    _compileJoins() {
+        return this._.joins.map(join => this._compileJoin(join)).join(" ");
+    }
+    
+    _compileJoin(join) {
+        return " JOIN " + join.selectable.compile() + " ON " + join.condition.compile();
     }
 }
 
@@ -93,5 +132,6 @@ export default {
     table,
     column,
     from,
+    eq,
     compile
 }
