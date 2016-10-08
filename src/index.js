@@ -7,7 +7,7 @@ export function table(name, columns) {
 class Table {
     constructor(name, columns) {
         this.name = name;
-        this.c = mapValues(columns, column => new BoundColumn(this, column));
+        this.c = mapValues(columns, column => new BoundColumn({table: this, column}));
     }
 }
 
@@ -22,13 +22,27 @@ class Column {
 }
 
 class BoundColumn {
-    constructor(table, column) {
-        this._table = table;
-        this._column = column;
+    constructor(options) {
+        this._ = options;
+    }
+    
+    _copy(options) {
+        return new BoundColumn({
+            ...this._,
+            ...options
+        });
+    }
+    
+    as(alias) {
+        return this._copy({alias});
     }
     
     compile() {
-        return this._table.name + "." + this._column.name;
+        let sql = this._.table.name + "." + this._.column.name;
+        if (this._.alias) {
+            sql += " AS " + this._.alias;
+        }
+        return sql;
     }
 }
 

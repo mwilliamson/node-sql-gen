@@ -21,3 +21,11 @@ test("select multiple columns from table", () => {
     const query = sql.from(Author).select(Author.c.id, Author.c.title);
     assert.equal(sql.compile(query), "SELECT author.id, author.title FROM author");
 });
+
+test("select column with alias", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const query = sql.from(Author).select(Author.c.id.as("author_id"));
+    assert.equal(sql.compile(query), "SELECT author.id AS author_id FROM author");
+});
