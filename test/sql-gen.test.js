@@ -53,3 +53,12 @@ test("inner join", () => {
         .select(Author.c.id, Book.c.id);
     assert.equal(sql.compile(query), "SELECT author.id, book.id FROM author JOIN book ON author.id = book.author_id");
 });
+
+test("select from subquery", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const authors = sql.from(Author).select(Author.c.id).subquery();
+    const query = sql.from(authors).select(authors.c.id);
+    assert.equal(sql.compile(query), "SELECT anon_0.id FROM (SELECT author.id FROM author) AS anon_0");
+});

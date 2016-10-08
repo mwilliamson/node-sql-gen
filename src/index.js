@@ -1,4 +1,4 @@
-import { mapValues } from "lodash";
+import { fromPairs, mapValues } from "lodash";
 
 export function table(name, columns) {
     return new Table(name, columns);
@@ -8,7 +8,10 @@ class Table {
     constructor(name, columns) {
         this.name = name;
         this.columns = columns;
-        this.c = mapValues(columns, column => new BoundColumn({selectable: this, column}));
+        this.c = mapValues(columns, column => new BoundColumn({
+            selectable: this,
+            columnName: column.name
+        }));
     }
     
     as(alias) {
@@ -22,7 +25,7 @@ class AliasedTable {
         this.name = alias;
         this.c = mapValues(table.columns, column => new BoundColumn({
             selectable: this,
-            column: column
+            columnName: column.name
         }));
     }
     
@@ -57,8 +60,12 @@ class BoundColumn {
         return this._copy({alias});
     }
     
+    key() {
+        return this._.columnName;
+    }
+    
     compile() {
-        let sql = this._.selectable.name + "." + this._.column.name;
+        let sql = this._.selectable.name + "." + this._.columnName;
         if (this._.alias) {
             sql += " AS " + this._.alias;
         }
@@ -131,6 +138,10 @@ class Query {
         return this._copy({columns: columns});
     }
     
+    subquery() {
+        return new SubQuery(this, this._.columns.map(column => column.key()));
+    }
+    
     compile() {
         return "SELECT " + this._compileColumns() + " FROM " + this._.selectable.compile() + this._compileJoins();
     }
@@ -145,6 +156,23 @@ class Query {
     
     _compileJoin(join) {
         return " JOIN " + join.selectable.compile() + " ON " + join.condition.compile();
+    }
+}
+
+class SubQuery {
+    constructor(query, columns) {
+        this._query = query;
+        this.c = fromPairs(columns.map(column => [
+            column,
+            new BoundColumn({
+                selectable: {name: "anon_0"},
+                columnName: column
+            })
+        ]));
+    }
+    
+    compile() {
+        return "(" + this._query.compile() + ") AS anon_0";
     }
 }
 
