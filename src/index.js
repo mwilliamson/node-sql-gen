@@ -146,13 +146,23 @@ class Query {
         return this._copy({columns: columns});
     }
     
+    distinct() {
+        return this._copy({distinct: true});
+    }
+    
     subquery() {
         return new SubQuery(this, this._.columns.map(column => column.key()));
     }
     
     compile(options) {
         const froms = " FROM " + this._.selectable.compile(options) + this._compileJoins(options);
-        return "SELECT " + this._compileColumns(options) + froms;
+        let sql = "SELECT ";
+        
+        if (this._.distinct) {
+            sql += "DISTINCT ";
+        }
+        
+        return sql + this._compileColumns(options) + froms;
     }
     
     _compileColumns(options) {

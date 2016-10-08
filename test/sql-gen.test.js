@@ -87,3 +87,11 @@ test("select from multiple subqueries", () => {
         .select(authors.c.id);
     assert.equal(sql.compile(query), "SELECT anon_0.id FROM (SELECT author.id FROM author) AS anon_0 JOIN (SELECT book.author_id FROM book) AS anon_1 ON anon_0.id = anon_1.author_id");
 });
+
+test("select distinct", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const query = sql.from(Author).select(Author.c.id).distinct();
+    assert.equal(sql.compile(query), "SELECT DISTINCT author.id FROM author");
+});
