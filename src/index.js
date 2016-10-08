@@ -17,20 +17,28 @@ class Table {
     as(alias) {
         return new AliasedTable(this, alias);
     }
+    
+    compileReference() {
+        return this.name;
+    }
 }
 
 class AliasedTable {
     constructor(table, alias) {
         this._table = table;
-        this.name = alias;
+        this._alias = alias;
         this.c = mapValues(table.columns, column => new BoundColumn({
             selectable: this,
             columnName: column.name
         }));
     }
     
-    compile() {
-        return toSelectable(this._table).compile() + " AS " + this.name;
+    compileReference(options) {
+        return this._alias;
+    }
+    
+    compile(options) {
+        return toSelectable(this._table).compile(options) + " AS " + this._alias;
     }
 }
 
@@ -64,8 +72,8 @@ class BoundColumn {
         return this._.alias || this._.columnName;
     }
     
-    compile() {
-        let sql = this._.selectable.name + "." + this._.columnName;
+    compile(options) {
+        let sql = this._.selectable.compileReference(options) + "." + this._.columnName;
         if (this._.alias) {
             sql += " AS " + this._.alias;
         }
@@ -106,8 +114,8 @@ class BinaryOperation {
         this._right = right;
     }
     
-    compile() {
-        return this._left.compile() + " " + this._operator + " " + this._right.compile();
+    compile(options) {
+        return this._left.compile(options) + " " + this._operator + " " + this._right.compile(options);
     }
 }
 
@@ -142,42 +150,56 @@ class Query {
         return new SubQuery(this, this._.columns.map(column => column.key()));
     }
     
-    compile() {
-        return "SELECT " + this._compileColumns() + " FROM " + this._.selectable.compile() + this._compileJoins();
+    compile(options) {
+        const froms = " FROM " + this._.selectable.compile(options) + this._compileJoins(options);
+        return "SELECT " + this._compileColumns(options) + froms;
     }
     
-    _compileColumns() {
-        return this._.columns.map(column => column.compile()).join(", ");
+    _compileColumns(options) {
+        return this._.columns.map(column => column.compile(options)).join(", ");
     }
     
-    _compileJoins() {
-        return this._.joins.map(join => this._compileJoin(join)).join(" ");
+    _compileJoins(options) {
+        return this._.joins.map(join => this._compileJoin(join, options)).join(" ");
     }
     
-    _compileJoin(join) {
-        return " JOIN " + join.selectable.compile() + " ON " + join.condition.compile();
+    _compileJoin(join, options) {
+        return " JOIN " + join.selectable.compile(options) + " ON " + join.condition.compile(options);
     }
 }
 
+let subQueryId = 0;
+
 class SubQuery {
     constructor(query, columns) {
+        this._id = subQueryId++;
         this._query = query;
         this.c = fromPairs(columns.map(column => [
             column,
             new BoundColumn({
-                selectable: {name: "anon_0"},
+                selectable: this,
                 columnName: column
             })
         ]));
     }
     
-    compile() {
-        return "(" + this._query.compile() + ") AS anon_0";
+    compileReference(options) {
+        return "anon_" + options.anonMap[this._id];
+    }
+    
+    compile(options) {
+        const selectableId = options.anonCounter[0]++;
+        // TODO: handle subquery used multiple times in same query
+        options.anonMap[this._id] = selectableId;
+        return "(" + this._query.compile(options) + ") AS anon_" + selectableId;
     }
 }
 
 export function compile(query) {
-    return query.compile();
+    return query.compile({
+        anonMap: {},
+        anonCounter: [0]
+    });
 }
 
 export default {

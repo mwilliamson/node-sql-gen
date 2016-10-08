@@ -71,3 +71,19 @@ test("select from subquery with aliased columns", () => {
     const query = sql.from(authors).select(authors.c.authorId);
     assert.equal(sql.compile(query), "SELECT anon_0.authorId FROM (SELECT author.id AS authorId FROM author) AS anon_0");
 });
+
+test("select from multiple subqueries", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const Book = sql.table("book", {
+        authorId: sql.column({name: "author_id"})
+    });
+    const authors = sql.from(Author).select(Author.c.id).subquery();
+    const books = sql.from(Book).select(Book.c.authorId).subquery();
+    const query = sql
+        .from(authors)
+        .join(books, sql.eq(authors.c.id, books.c.author_id))
+        .select(authors.c.id);
+    assert.equal(sql.compile(query), "SELECT anon_0.id FROM (SELECT author.id FROM author) AS anon_0 JOIN (SELECT book.author_id FROM book) AS anon_1 ON anon_0.id = anon_1.author_id");
+});
