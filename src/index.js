@@ -61,7 +61,7 @@ class BoundColumn {
     }
     
     key() {
-        return this._.columnName;
+        return this._.alias || this._.columnName;
     }
     
     compile() {

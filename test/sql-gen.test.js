@@ -62,3 +62,12 @@ test("select from subquery", () => {
     const query = sql.from(authors).select(authors.c.id);
     assert.equal(sql.compile(query), "SELECT anon_0.id FROM (SELECT author.id FROM author) AS anon_0");
 });
+
+test("select from subquery with aliased columns", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const authors = sql.from(Author).select(Author.c.id.as("authorId")).subquery();
+    const query = sql.from(authors).select(authors.c.authorId);
+    assert.equal(sql.compile(query), "SELECT anon_0.authorId FROM (SELECT author.id AS authorId FROM author) AS anon_0");
+});
