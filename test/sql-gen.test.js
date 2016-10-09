@@ -4,6 +4,8 @@ import sql from "../";
 
 const test = require("./test")(module)
 
+// TODO: operator precedence
+
 
 test("select single column from table", () => {
     const Author = sql.table("author", {
@@ -118,6 +120,25 @@ test("literal in select is coerced to bound parameter", () => {
     });
     const query = sql.from(Author).select(1);
     assertQuery(query, "SELECT ? FROM author", 1);
+});
+
+test("single where call", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const query = sql.from(Author).select(Author.c.id).where(sql.eq(Author.c.id, 1));
+    assertQuery(query, "SELECT author.id FROM author WHERE author.id = ?", 1);
+});
+
+test("multiple where calls generate single WHERE clause with ANDs", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const query = sql.from(Author)
+        .select(Author.c.id)
+        .where(sql.eq(Author.c.id, 1))
+        .where(sql.eq(Author.c.id, 2));
+    assertQuery(query, "SELECT author.id FROM author WHERE author.id = ? AND author.id = ?", 1, 2);
 });
 
 function assertQuery(query, expectedSql, ...expectedParams) {

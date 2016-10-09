@@ -63,8 +63,8 @@ class BinaryOperation extends Expression {
     constructor(operator, left, right) {
         super();
         this._operator = operator;
-        this._left = left;
-        this._right = right;
+        this._left = toExpression(left);
+        this._right = toExpression(right);
     }
     
     compileExpression(compiler) {
@@ -89,6 +89,10 @@ class BoundParameter extends Expression {
 }
 
 export function toColumn(value) {
+    return toExpression(value);
+}
+
+export function toExpression(value) {
     if (value instanceof Expression) {
         return value;
     } else {

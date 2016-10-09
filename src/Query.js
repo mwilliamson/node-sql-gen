@@ -6,6 +6,7 @@ export default class Query {
     constructor({...options}) {
         this._ = options;
         this._.joins = this._.joins || [];
+        this._.conditions = this._.conditions || [];
     }
     
     _copy(options) {
@@ -30,6 +31,12 @@ export default class Query {
         return this._copy({distinct: true});
     }
     
+    where(condition) {
+        return this._copy({
+            conditions: this._.conditions.concat(condition)
+        });
+    }
+    
     subquery() {
         return new SubQuery(this, this._.columns.map(column => column.key()));
     }
@@ -42,7 +49,7 @@ export default class Query {
             sql += "DISTINCT ";
         }
         
-        return sql + this._compileColumns(compiler) + froms;
+        return sql + this._compileColumns(compiler) + froms + this._compileWhere(compiler);
     }
     
     _compileColumns(compiler) {
@@ -55,6 +62,14 @@ export default class Query {
     
     _compileJoin(join, compiler) {
         return " JOIN " + join.selectable.compileSelectable(compiler) + " ON " + join.condition.compileExpression(compiler);
+    }
+    
+    _compileWhere(compiler) {
+        if (this._.conditions.length === 0) {
+            return "";
+        } else {
+            return " WHERE " + this._.conditions.map(condition => condition.compileExpression(compiler)).join(" AND ");
+        }
     }
 }
 
