@@ -18,12 +18,12 @@ export class BoundColumn {
         return this._.alias || this._.columnName;
     }
     
-    compileExpression(options) {
-        return this._.selectable.compileReference(options) + "." + this._.columnName;
+    compileExpression(compiler) {
+        return this._.selectable.compileReference(compiler) + "." + this._.columnName;
     }
     
-    compileColumn(options) {
-        let sql = this.compileExpression(options);
+    compileColumn(compiler) {
+        let sql = this.compileExpression(compiler);
         if (this._.alias && this._.alias !== this._.columnName) {
             sql += " AS " + this._.alias;
         }
@@ -42,7 +42,7 @@ class BinaryOperation {
         this._right = right;
     }
     
-    compileExpression(options) {
-        return this._left.compileExpression(options) + " " + this._operator + " " + this._right.compileExpression(options);
+    compileExpression(compiler) {
+        return this._left.compileExpression(compiler) + " " + this._operator + " " + this._right.compileExpression(compiler);
     }
 }

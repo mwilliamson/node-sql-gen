@@ -41,12 +41,12 @@ class AliasedTable {
         }));
     }
     
-    compileReference(options) {
+    compileReference() {
         return this._alias;
     }
     
-    compileSelectable(options) {
-        return this._table.compileSelectable(options) + " AS " + this._alias;
+    compileSelectable(compiler) {
+        return this._table.compileSelectable(compiler) + " AS " + this._alias;
     }
 }
 
@@ -65,10 +65,26 @@ export function from(selectable) {
 }
 
 export function compile(query) {
-    return query.compile({
-        anonMap: {},
-        anonCounter: [0]
-    });
+    const compiler = new Compiler();
+    
+    return query.compile(compiler);
+}
+
+class Compiler {
+    constructor() {
+        this._anonymousMap = {};
+        this._anonymousCounter = 0;
+    }
+    
+    addAnonymousId(elementId) {
+        const anonymousId = this._anonymousCounter++;
+        this._anonymousMap[elementId] = anonymousId;
+        return anonymousId;
+    }
+    
+    getAnonymousId(elementId) {
+        return this._anonymousMap[elementId];
+    }
 }
 
 export default {

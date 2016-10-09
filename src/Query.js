@@ -34,27 +34,27 @@ export default class Query {
         return new SubQuery(this, this._.columns.map(column => column.key()));
     }
     
-    compile(options) {
-        const froms = " FROM " + this._.selectable.compileSelectable(options) + this._compileJoins(options);
+    compile(compiler) {
+        const froms = " FROM " + this._.selectable.compileSelectable(compiler) + this._compileJoins(compiler);
         let sql = "SELECT ";
         
         if (this._.distinct) {
             sql += "DISTINCT ";
         }
         
-        return sql + this._compileColumns(options) + froms;
+        return sql + this._compileColumns(compiler) + froms;
     }
     
-    _compileColumns(options) {
-        return this._.columns.map(column => column.compileColumn(options)).join(", ");
+    _compileColumns(compiler) {
+        return this._.columns.map(column => column.compileColumn(compiler)).join(", ");
     }
     
-    _compileJoins(options) {
-        return this._.joins.map(join => this._compileJoin(join, options)).join(" ");
+    _compileJoins(compiler) {
+        return this._.joins.map(join => this._compileJoin(join, compiler)).join(" ");
     }
     
-    _compileJoin(join, options) {
-        return " JOIN " + join.selectable.compileSelectable(options) + " ON " + join.condition.compileExpression(options);
+    _compileJoin(join, compiler) {
+        return " JOIN " + join.selectable.compileSelectable(compiler) + " ON " + join.condition.compileExpression(compiler);
     }
 }
 
@@ -73,14 +73,13 @@ class SubQuery {
         ]));
     }
     
-    compileReference(options) {
-        return "anon_" + options.anonMap[this._id];
+    compileReference(compiler) {
+        return "anon_" + compiler.getAnonymousId(this._id);
     }
     
-    compileSelectable(options) {
-        const selectableId = options.anonCounter[0]++;
+    compileSelectable(compiler) {
+        const selectableId = compiler.addAnonymousId(this._id);
         // TODO: handle subquery used multiple times in same query
-        options.anonMap[this._id] = selectableId;
-        return "(" + this._query.compile(options) + ") AS anon_" + selectableId;
+        return "(" + this._query.compile(compiler) + ") AS anon_" + selectableId;
     }
 }
