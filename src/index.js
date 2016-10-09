@@ -87,13 +87,11 @@ class Compiler {
         this.params.push(value);
     }
     
-    addAnonymousId(elementId) {
-        const anonymousId = this._anonymousCounter++;
-        this._anonymousMap[elementId] = anonymousId;
-        return anonymousId;
-    }
-    
     getAnonymousId(elementId) {
+        if (this._anonymousMap[elementId] === undefined) {
+            const anonymousId = this._anonymousCounter++;
+            this._anonymousMap[elementId] = anonymousId;
+        }
         return this._anonymousMap[elementId];
     }
 }

@@ -42,14 +42,17 @@ export default class Query {
     }
     
     compile(compiler) {
-        const froms = " FROM " + this._.selectable.compileSelectable(compiler) + this._compileJoins(compiler);
         let sql = "SELECT ";
-        
         if (this._.distinct) {
             sql += "DISTINCT ";
         }
+        sql += this._compileColumns(compiler);
         
-        return sql + this._compileColumns(compiler) + froms + this._compileWhere(compiler);
+        sql += " FROM " + this._.selectable.compileSelectable(compiler) + this._compileJoins(compiler);
+        
+        sql += this._compileWhere(compiler);
+        
+        return sql;
     }
     
     _compileColumns(compiler) {
@@ -93,7 +96,7 @@ class SubQuery {
     }
     
     compileSelectable(compiler) {
-        const selectableId = compiler.addAnonymousId(this._id);
+        const selectableId = compiler.getAnonymousId(this._id);
         // TODO: handle subquery used multiple times in same query
         return "(" + this._query.compile(compiler) + ") AS anon_" + selectableId;
     }
