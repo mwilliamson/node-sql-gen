@@ -1,5 +1,12 @@
-export class BoundColumn {
+class Expression {
+    as(alias) {
+        return new AliasedColumn(this, alias);
+    }
+}
+
+export class BoundColumn extends Expression {
     constructor(options) {
+        super();
         this._ = options;
     }
     
@@ -10,12 +17,8 @@ export class BoundColumn {
         });
     }
     
-    as(alias) {
-        return this._copy({alias});
-    }
-    
     key() {
-        return this._.alias || this._.columnName;
+        return this._.columnName;
     }
     
     compileExpression(compiler) {
@@ -23,11 +26,26 @@ export class BoundColumn {
     }
     
     compileColumn(compiler) {
-        let sql = this.compileExpression(compiler);
-        if (this._.alias && this._.alias !== this._.columnName) {
-            sql += " AS " + this._.alias;
-        }
-        return sql;
+        return this.compileExpression(compiler);
+    }
+}
+
+class AliasedColumn {
+    constructor(expression, alias) {
+        this._expression = expression;
+        this._alias = alias;
+    }
+    
+    key() {
+        return this._alias;
+    }
+    
+    compileExpression(compiler) {
+        return this._expression.compileExpression(compiler);
+    }
+    
+    compileColumn(compiler) {
+        return this.compileExpression(compiler) + " AS " + this._alias;
     }
 }
 

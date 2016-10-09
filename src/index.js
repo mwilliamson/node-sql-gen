@@ -11,11 +11,17 @@ class Table {
     constructor(name, columns) {
         this.name = name;
         this.columns = columns;
-        this.c = mapValues(columns, (column, propertyName) => new BoundColumn({
-            selectable: this,
-            columnName: column.name,
-            alias: propertyName
-        }));
+        this.c = mapValues(columns, (column, propertyName) => {
+            const bound = new BoundColumn({
+                selectable: this,
+                columnName: column.name
+            });
+            if (propertyName !== bound.key()) {
+                return bound.as(propertyName);
+            } else {
+                return bound;
+            }
+        });
     }
     
     as(alias) {
