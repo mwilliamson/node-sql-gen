@@ -104,7 +104,20 @@ test("select distinct", () => {
     assertQuery(query, "SELECT DISTINCT author.id FROM author");
 });
 
+test("select bound parameter", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const query = sql.from(Author).select(sql.boundParameter({value: 1}));
+    assertQuery(query, "SELECT ? FROM author", 1);
+});
 
-function assertQuery(query, expectedSql) {
-    assert.equal(sql.compile(query), expectedSql);
+function assertQuery(query, expectedSql, ...expectedParams) {
+    assert.deepEqual(
+        sql.compile(query),
+        {
+            sql: expectedSql,
+            params: expectedParams
+        }
+    );
 }

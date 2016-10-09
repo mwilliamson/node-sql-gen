@@ -1,6 +1,6 @@
 import { mapValues } from "lodash";
 
-import { BoundColumn, eq } from "./expressions";
+import { BoundColumn, eq, boundParameter } from "./expressions";
 import Query from "./Query";
 
 export function table(name, columns) {
@@ -66,14 +66,19 @@ export function from(selectable) {
 
 export function compile(query) {
     const compiler = new Compiler();
-    
-    return query.compile(compiler);
+    const sql = query.compile(compiler);
+    return {sql, params: compiler.params};
 }
 
 class Compiler {
     constructor() {
         this._anonymousMap = {};
         this._anonymousCounter = 0;
+        this.params = [];
+    }
+    
+    addParam(value) {
+        this.params.push(value);
     }
     
     addAnonymousId(elementId) {
@@ -92,5 +97,6 @@ export default {
     column,
     from,
     eq,
+    boundParameter,
     compile
 }

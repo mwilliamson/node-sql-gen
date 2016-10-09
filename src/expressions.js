@@ -46,3 +46,18 @@ class BinaryOperation {
         return this._left.compileExpression(compiler) + " " + this._operator + " " + this._right.compileExpression(compiler);
     }
 }
+
+export function boundParameter(options) {
+    return new BoundParameter(options);
+}
+
+class BoundParameter {
+    constructor(options) {
+        this._ = options;
+    }
+    
+    compileColumn(compiler) {
+        compiler.addParam(this._.value);
+        return "?";
+    }
+}
