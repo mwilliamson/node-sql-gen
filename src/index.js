@@ -8,9 +8,10 @@ class Table {
     constructor(name, columns) {
         this.name = name;
         this.columns = columns;
-        this.c = mapValues(columns, column => new BoundColumn({
+        this.c = mapValues(columns, (column, propertyName) => new BoundColumn({
             selectable: this,
-            columnName: column.name
+            columnName: column.name,
+            alias: propertyName
         }));
     }
     
@@ -72,9 +73,13 @@ class BoundColumn {
         return this._.alias || this._.columnName;
     }
     
-    compile(options) {
-        let sql = this._.selectable.compileReference(options) + "." + this._.columnName;
-        if (this._.alias) {
+    compileExpression(options) {
+        return this._.selectable.compileReference(options) + "." + this._.columnName;
+    }
+    
+    compileColumn(options) {
+        let sql = this.compileExpression(options);
+        if (this._.alias && this._.alias !== this._.columnName) {
             sql += " AS " + this._.alias;
         }
         return sql;
@@ -114,8 +119,8 @@ class BinaryOperation {
         this._right = right;
     }
     
-    compile(options) {
-        return this._left.compile(options) + " " + this._operator + " " + this._right.compile(options);
+    compileExpression(options) {
+        return this._left.compileExpression(options) + " " + this._operator + " " + this._right.compileExpression(options);
     }
 }
 
@@ -166,7 +171,7 @@ class Query {
     }
     
     _compileColumns(options) {
-        return this._.columns.map(column => column.compile(options)).join(", ");
+        return this._.columns.map(column => column.compileColumn(options)).join(", ");
     }
     
     _compileJoins(options) {
@@ -174,7 +179,7 @@ class Query {
     }
     
     _compileJoin(join, options) {
-        return " JOIN " + join.selectable.compile(options) + " ON " + join.condition.compile(options);
+        return " JOIN " + join.selectable.compile(options) + " ON " + join.condition.compileExpression(options);
     }
 }
 

@@ -30,6 +30,14 @@ test("select column with alias", () => {
     assert.equal(sql.compile(query), "SELECT author.id AS author_id FROM author");
 });
 
+test("default column alias is key of column property", () => {
+    const Author = sql.table("author", {
+        authorId: sql.column({name: "id"})
+    });
+    const query = sql.from(Author).select(Author.c.authorId);
+    assert.equal(sql.compile(query), "SELECT author.id AS authorId FROM author");
+});
+
 test("select from table with alias", () => {
     const Author = sql.table("author", {
         id: sql.column({name: "id"})
@@ -77,10 +85,10 @@ test("select from multiple subqueries", () => {
         id: sql.column({name: "id"})
     });
     const Book = sql.table("book", {
-        authorId: sql.column({name: "author_id"})
+        author_id: sql.column({name: "author_id"})
     });
     const authors = sql.from(Author).select(Author.c.id).subquery();
-    const books = sql.from(Book).select(Book.c.authorId).subquery();
+    const books = sql.from(Book).select(Book.c.author_id).subquery();
     const query = sql
         .from(authors)
         .join(books, sql.eq(authors.c.id, books.c.author_id))
