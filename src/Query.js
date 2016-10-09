@@ -1,6 +1,6 @@
 import { fromPairs, mapValues } from "lodash";
 
-import { BoundColumn } from "./expressions";
+import { BoundColumn, toColumn } from "./expressions";
 
 export default class Query {
     constructor({...options}) {
@@ -23,7 +23,7 @@ export default class Query {
     }
     
     select(...columns) {
-        return this._copy({columns: columns});
+        return this._copy({columns: columns.map(toColumn)});
     }
     
     distinct() {

@@ -2,6 +2,10 @@ class Expression {
     as(alias) {
         return new AliasedColumn(this, alias);
     }
+    
+    compileColumn(compiler) {
+        return this.compileExpression(compiler);
+    }
 }
 
 export class BoundColumn extends Expression {
@@ -30,8 +34,10 @@ export class BoundColumn extends Expression {
     }
 }
 
-class AliasedColumn {
+// TODO: override as()
+class AliasedColumn extends Expression {
     constructor(expression, alias) {
+        super();
         this._expression = expression;
         this._alias = alias;
     }
@@ -53,8 +59,9 @@ export function eq(left, right) {
     return new BinaryOperation("=", left, right);
 }
 
-class BinaryOperation {
+class BinaryOperation extends Expression {
     constructor(operator, left, right) {
+        super();
         this._operator = operator;
         this._left = left;
         this._right = right;
@@ -69,13 +76,22 @@ export function boundParameter(options) {
     return new BoundParameter(options);
 }
 
-class BoundParameter {
+class BoundParameter extends Expression {
     constructor(options) {
+        super();
         this._ = options;
     }
     
-    compileColumn(compiler) {
+    compileExpression(compiler) {
         compiler.addParam(this._.value);
         return "?";
+    }
+}
+
+export function toColumn(value) {
+    if (value instanceof Expression) {
+        return value;
+    } else {
+        return boundParameter({value});
     }
 }

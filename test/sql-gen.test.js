@@ -112,6 +112,14 @@ test("select bound parameter", () => {
     assertQuery(query, "SELECT ? FROM author", 1);
 });
 
+test("literal in select is coerced to bound parameter", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id"})
+    });
+    const query = sql.from(Author).select(1);
+    assertQuery(query, "SELECT ? FROM author", 1);
+});
+
 function assertQuery(query, expectedSql, ...expectedParams) {
     assert.deepEqual(
         sql.compile(query),
