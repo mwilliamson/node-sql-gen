@@ -93,7 +93,9 @@ export function toColumn(value) {
 }
 
 export function toExpression(value) {
-    if (value instanceof Expression) {
+    if (value === undefined) {
+        throw new Error("expression cannot be undefined");
+    } else if (value instanceof Expression) {
         return value;
     } else {
         return boundParameter({value});
