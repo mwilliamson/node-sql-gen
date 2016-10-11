@@ -1,6 +1,7 @@
 import assert from "assert";
 
 import sql from "../";
+import { Compiler } from "../lib/compiler";
 
 const test = require("./test")(module)
 
@@ -140,6 +141,29 @@ test("multiple where calls generate single WHERE clause with ANDs", () => {
         .where(sql.eq(Author.c.id, 2));
     assertQuery(query, "SELECT author.id FROM author WHERE author.id = ? AND author.id = ?", 1, 2);
 });
+
+test("create table", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id", type: sql.types.int}),
+        title: sql.column({name: "title", type: sql.types.string})
+    });
+    const query = sql.createTable(Author);
+    assertQuery(query, "CREATE TABLE author (id INTEGER, title VARCHAR)");
+});
+
+test("create columns", {
+    "primary key": () => {
+        const column = sql.column({name: "id", type: sql.types.int, primaryKey: true});
+        assertColumn(column, "id INTEGER PRIMARY KEY");
+    }
+});
+
+function assertColumn(column, expectedSql) {
+    const compiler = new Compiler();
+    const text = column.compileCreate(compiler);
+    assert.equal(text, expectedSql);
+    assert.deepEqual(compiler.params, []);
+}
 
 function assertQuery(query, expectedSql, ...expectedParams) {
     assert.deepEqual(

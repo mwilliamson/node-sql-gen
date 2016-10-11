@@ -1,7 +1,8 @@
-import { mapValues } from "lodash";
+import { map, mapValues } from "lodash";
 
 import { BoundColumn, eq, boundParameter } from "./expressions";
 import Query from "./Query";
+import { Compiler, compile } from "./compiler";
 
 export function table(name, columns) {
     return new Table(name, columns);
@@ -61,8 +62,20 @@ export function column(options) {
 }
 
 class Column {
-    constructor({name}) {
+    constructor({name, type, primaryKey}) {
         this.name = name;
+        this._type = type;
+        this._primaryKey = primaryKey;
+    }
+    
+    compileCreate(compiler) {
+        let sql = this.name + " " + this._type;
+        
+        if (this._primaryKey) {
+            sql += " PRIMARY KEY";
+        }
+        
+        return sql;
     }
 }
 
@@ -70,29 +83,23 @@ export function from(selectable) {
     return new Query({selectable});
 }
 
-export function compile(query) {
-    const compiler = new Compiler();
-    const sql = query.compile(compiler);
-    return {sql, params: compiler.params};
+export const types = {
+    int: "INTEGER",
+    string: "VARCHAR"
+};
+
+export function createTable(table) {
+    return new CreateTable(table);
 }
 
-class Compiler {
-    constructor() {
-        this._anonymousMap = {};
-        this._anonymousCounter = 0;
-        this.params = [];
+class CreateTable {
+    constructor(table) {
+        this._table = table;
     }
     
-    addParam(value) {
-        this.params.push(value);
-    }
-    
-    getAnonymousId(elementId) {
-        if (this._anonymousMap[elementId] === undefined) {
-            const anonymousId = this._anonymousCounter++;
-            this._anonymousMap[elementId] = anonymousId;
-        }
-        return this._anonymousMap[elementId];
+    compile(compiler) {
+        const columns = map(this._table.columns, column => column.compileCreate(compiler)).join(", ");
+        return "CREATE TABLE " + this._table.name + " (" + columns + ")";
     }
 }
 
@@ -102,5 +109,7 @@ export default {
     from,
     eq,
     boundParameter,
-    compile
+    compile,
+    types,
+    createTable
 }
