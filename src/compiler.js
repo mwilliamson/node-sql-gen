@@ -20,6 +20,6 @@ export class Compiler {
 
 export function compile(query) {
     const compiler = new Compiler();
-    const sql = query.compile(compiler);
-    return {sql, params: compiler.params};
+    const text = query.compile(compiler);
+    return {text, params: compiler.params};
 }

@@ -174,7 +174,7 @@ function assertQuery(query, expectedSql, ...expectedParams) {
     assert.deepEqual(
         sql.compile(query),
         {
-            sql: expectedSql,
+            text: expectedSql,
             params: expectedParams
         }
     );
