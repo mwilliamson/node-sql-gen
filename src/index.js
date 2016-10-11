@@ -62,10 +62,11 @@ export function column(options) {
 }
 
 class Column {
-    constructor({name, type, primaryKey}) {
+    constructor({name, type, primaryKey, nullable}) {
         this.name = name;
         this._type = type;
         this._primaryKey = primaryKey;
+        this._nullable = nullable;
     }
     
     compileCreate(compiler) {
@@ -73,6 +74,10 @@ class Column {
         
         if (this._primaryKey) {
             sql += " PRIMARY KEY";
+        }
+        
+        if (this._nullable !== undefined && !this._nullable) {
+            sql += " NOT NULL";
         }
         
         return sql;

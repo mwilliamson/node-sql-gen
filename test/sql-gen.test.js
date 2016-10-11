@@ -155,6 +155,11 @@ test("create columns", {
     "primary key": () => {
         const column = sql.column({name: "id", type: sql.types.int, primaryKey: true});
         assertColumn(column, "id INTEGER PRIMARY KEY");
+    },
+    
+    "not null": () => {
+        const column = sql.column({name: "id", type: sql.types.int, nullable: false});
+        assertColumn(column, "id INTEGER NOT NULL");
     }
 });
 
