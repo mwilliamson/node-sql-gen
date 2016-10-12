@@ -50,5 +50,11 @@ If using [node-sqlite3](https://github.com/mapbox/node-sqlite3):
 ```javascript
 const {text, params} = sql.compile(query);
 const database = new sqlite3.Database("path/to/database");
-database.all(text, ...params);
+database.all(text, ...params, (error, rows) => {
+    if (error) {
+        console.error(error);
+    } else {
+        console.log(rows);
+    }
+});
 ```
