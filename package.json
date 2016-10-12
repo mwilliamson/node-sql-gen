@@ -1,7 +1,7 @@
 {
   "name": "sql-gen",
   "version": "0.1.0",
-  "description": "A SQL query builder",
+  "description": "A SQL query builder, inspired by SQLAlchemy",
   "main": "lib/index.js",
   "directories": {
     "test": "test"
@@ -18,7 +18,8 @@
   },
   "keywords": [
     "sql",
-    "query"
+    "query",
+    "sqlalchemy"
   ],
   "author": "Michael Williamson <mike@zwobble.org>",
   "license": "BSD-2-Clause",

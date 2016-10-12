@@ -163,6 +163,26 @@ test("create columns", {
     }
 });
 
+test("README.md", () => {
+    const Author = sql.table("author", {
+        id: sql.column({name: "id", type: sql.types.int}),
+        name: sql.column({name: "name", type: sql.types.string})
+    });
+    const Book = sql.table("book", {
+        id: sql.column({name: "id", type: sql.types.int}),
+        authorId: sql.column({name: "author_id", type: sql.types.int}),
+        title: sql.column({name: "title", type: sql.types.string}),
+        genre: sql.column({name: "genre", type: sql.types.string})
+    });
+
+    const query = sql.from(Book)
+        .join(Author, sql.eq(Book.c.authorId, Author.c.id))
+        .where(sql.eq(Book.c.genre, "comedy"))
+        .select(Author.c.name, Book.c.title);
+
+    assertQuery(query, "SELECT author.name, book.title FROM book JOIN author ON book.author_id = author.id WHERE book.genre = ?", "comedy");
+});
+
 function assertColumn(column, expectedSql) {
     const compiler = new Compiler();
     const text = column.compileCreate(compiler);
