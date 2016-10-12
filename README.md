@@ -76,25 +76,25 @@ Returns an instance of `Table`, which has the following properties:
 * `c`: the columns of the table, which can then be used in generating queries.
   For instance:
   
-      ```javascript
-      const Author = table("author", {
-          id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
-          name: sql.column({name: "name", type: sql.types.string})
-      });
-      sql.from(Author).select(Author.c.name)
-      ```
+  ```javascript
+  const Author = table("author", {
+      id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
+      name: sql.column({name: "name", type: sql.types.string})
+  });
+  sql.from(Author).select(Author.c.name)
+  ```
 
 * `as(alias)`: create a from clause for this table with an alternate name,
   as specified by `alias`. For instance:
   
-      ```javascript
-      const Author = table("author", {
-          id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
-          name: sql.column({name: "name", type: sql.types.string})
-      });
-      const authorAlias = Author.as("favourite_author");
-      sql.from(authorAlias).select(authorAlias.c.name).where(sql.eq(authorAlias.c.id, 42))
-      ```
+  ```javascript
+  const Author = table("author", {
+      id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
+      name: sql.column({name: "name", type: sql.types.string})
+  });
+  const authorAlias = Author.as("favourite_author");
+  sql.from(authorAlias).select(authorAlias.c.name).where(sql.eq(authorAlias.c.id, 42))
+  ```
 
 ### `column(options)`
 
