@@ -4,14 +4,14 @@ A SQL query builder, inspired by [SQLAlchemy](http://www.sqlalchemy.org/).
 
 ## Installation
 
-    npm install graphjoiner
+    npm install sql-gen
 
 ## Example
 
 We can define tables using `sql.table()` and `sql.column()`:
 
 ```javascript
-import sql from "node-sql-gen";
+import sql from "sql-gen";
 
 const Author = sql.table("author", {
     id: sql.column({name: "id", type: sql.types.int}),
