@@ -86,7 +86,7 @@ class SubQuery {
             column,
             new BoundColumn({
                 selectable: this,
-                columnName: column
+                name: column
             })
         ]));
     }

@@ -1,4 +1,4 @@
-import { map, mapValues } from "lodash";
+import { filter, map, mapValues } from "lodash";
 
 import { BoundColumn, eq, boundParameter } from "./expressions";
 import Query from "./Query";
@@ -14,8 +14,8 @@ class Table {
         this.columns = columns;
         this.c = mapValues(columns, (column, propertyName) => {
             const bound = new BoundColumn({
-                selectable: this,
-                columnName: column.name
+                ...column._,
+                selectable: this
             });
             if (propertyName !== bound.key()) {
                 return bound.as(propertyName);
@@ -23,6 +23,15 @@ class Table {
                 return bound;
             }
         });
+    }
+    
+    get primaryKey() {
+        const columns = filter(this.c, column => column.primaryKey);
+        if (columns.length === 0) {
+            return null;
+        } else {
+            return {columns};
+        }
     }
     
     as(alias) {
@@ -43,8 +52,8 @@ class AliasedTable {
         this._table = table;
         this._alias = alias;
         this.c = mapValues(table.columns, column => new BoundColumn({
-            selectable: this,
-            columnName: column.name
+            ...column._,
+            selectable: this
         }));
     }
     
@@ -62,21 +71,18 @@ export function column(options) {
 }
 
 class Column {
-    constructor({name, type, primaryKey, nullable}) {
-        this.name = name;
-        this._type = type;
-        this._primaryKey = primaryKey;
-        this._nullable = nullable;
+    constructor(options) {
+        this._ = options;
     }
     
     compileCreate(compiler) {
-        let sql = this.name + " " + this._type;
+        let sql = this._.name + " " + this._.type;
         
-        if (this._primaryKey) {
+        if (this._.primaryKey) {
             sql += " PRIMARY KEY";
         }
         
-        if (this._nullable !== undefined && !this._nullable) {
+        if (this._.nullable !== undefined && !this._.nullable) {
             sql += " NOT NULL";
         }
         

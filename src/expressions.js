@@ -14,6 +14,10 @@ export class BoundColumn extends Expression {
         this._ = options;
     }
     
+    get primaryKey() {
+        return this._.primaryKey;
+    }
+    
     _copy(options) {
         return new BoundColumn({
             ...this._,
@@ -22,11 +26,11 @@ export class BoundColumn extends Expression {
     }
     
     key() {
-        return this._.columnName;
+        return this._.name;
     }
     
     compileExpression(compiler) {
-        return this._.selectable.compileReference(compiler) + "." + this._.columnName;
+        return this._.selectable.compileReference(compiler) + "." + this._.name;
     }
     
     compileColumn(compiler) {

@@ -163,6 +163,36 @@ test("create columns", {
     }
 });
 
+test("table primary key property", {
+    "no primary key columns": () => {
+        const Author = sql.table("author", {
+            id: sql.column({name: "id", type: sql.types.int}),
+            name: sql.column({name: "name", type: sql.types.string})
+        });
+        assert.equal(Author.primaryKey, null);
+    },
+    "one primary key column": () => {
+        const Author = sql.table("author", {
+            id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
+            name: sql.column({name: "name", type: sql.types.string})
+        });
+        assert.deepEqual(
+            Author.primaryKey.columns.map(column => column.key()),
+            ["id"]
+        );
+    },
+    "multiple primary key columns": () => {
+        const Author = sql.table("author", {
+            id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
+            name: sql.column({name: "name", type: sql.types.string, primaryKey: true})
+        });
+        assert.deepEqual(
+            Author.primaryKey.columns.map(column => column.key()),
+            ["id", "name"]
+        );
+    }
+});
+
 test("README.md", () => {
     const Author = sql.table("author", {
         id: sql.column({name: "id", type: sql.types.int}),
