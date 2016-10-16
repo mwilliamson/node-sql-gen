@@ -96,6 +96,11 @@ Returns an instance of `Table`, which has the following properties:
   sql.from(authorAlias).select(authorAlias.c.name).where(sql.eq(authorAlias.c.id, 42))
   ```
 
+* `primaryKey`:
+  if the table has no columns defined as a primary key, this is `null`.
+  Otherwise, this is an object with a `columns` property,
+  which is an array of all of the columns in the primary key.
+
 ### `column(options)`
 
 Represent a column in a table.
