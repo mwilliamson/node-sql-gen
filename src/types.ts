@@ -1,9 +1,9 @@
-export interface SqlType {
+export interface SqlType<T> {
     name: string;
 }
 
-const int: SqlType = {name: "INTEGER"};
-const string: SqlType = {name: "VARCHAR"};
+const int: SqlType<number> = {name: "INTEGER"};
+const string: SqlType<string> = {name: "VARCHAR"};
 
 const types = {
     int: int,

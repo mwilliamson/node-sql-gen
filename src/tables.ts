@@ -82,7 +82,7 @@ interface TableColumnDefinitionOptions {
     name: string;
     nullable: boolean;
     primaryKey: boolean;
-    type: SqlType;
+    type: SqlType<unknown>;
 }
 
 export class TableColumnDefinition {
