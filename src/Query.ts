@@ -1,11 +1,11 @@
-import { fromPairs } from "lodash";
+import { fromPairs, map, mapValues } from "lodash";
 
 import { Compiler } from "./compiler";
-import { BoundColumn, Expression, NamedExpression, toColumn } from "./expressions";
+import { BoundColumn, Expression, toExpression } from "./expressions";
 import type { Selectable } from "./index";
 
 interface QueryOptions {
-    columns: Array<Expression>;
+    columns: {[name: string]: Expression};
     conditions: Array<Expression>;
     distinct: boolean;
     joins: Array<Join>;
@@ -22,7 +22,7 @@ export default class Query {
 
     constructor(options: Partial<QueryOptions> & Pick<QueryOptions, "selectable">) {
         this._ = {
-            columns: [],
+            columns: {},
             conditions: [],
             distinct: false,
             joins: [],
@@ -45,8 +45,8 @@ export default class Query {
     }
 
     // TODO: tighten types
-    select(...columns: Array<unknown>) {
-        return this._copy({columns: columns.map(toColumn)});
+    select(columns: {[name: string]: unknown}) {
+        return this._copy({columns: mapValues(columns, toExpression)});
     }
 
     distinct() {
@@ -60,8 +60,7 @@ export default class Query {
     }
 
     subquery() {
-        // TODO: remove cast
-        return new SubQuery(this, this._.columns.map(column => (column as NamedExpression).key()));
+        return new SubQuery(this, Object.keys(this._.columns));
     }
 
     compile(compiler: Compiler) {
@@ -79,7 +78,7 @@ export default class Query {
     }
 
     _compileColumns(compiler: Compiler) {
-        return this._.columns.map(column => column.compileColumn(compiler)).join(", ");
+        return map(this._.columns, (expression, alias) => expression.compileExpression(compiler) + " AS " + alias).join(", ");
     }
 
     _compileJoins(compiler: Compiler) {

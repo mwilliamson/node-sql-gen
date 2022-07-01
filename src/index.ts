@@ -4,8 +4,8 @@ import { BoundColumn, eq, Expression, boundParameter } from "./expressions";
 import Query from "./Query";
 import { Compiler, compile } from "./compiler";
 
-export function table(name: string, columns: {[name: string]: TableColumn}) {
-    return new Table(name, columns);
+export function table(name: string, columnDefinitions: {[name: string]: TableColumnDefinition}) {
+    return new Table(name, columnDefinitions);
 }
 
 export interface Selectable {
@@ -15,28 +15,22 @@ export interface Selectable {
 
 class Table implements Selectable {
     public readonly name: string;
-    public readonly columns: {[name: string]: TableColumn};
-    public readonly c: {[name: string]: Expression}
+    public readonly columnDefinitions: {[name: string]: TableColumnDefinition};
+    public readonly c: {[name: string]: BoundColumn}
 
-    constructor(name: string, columns: {[name: string]: TableColumn}) {
+    constructor(name: string, columnDefinitions: {[name: string]: TableColumnDefinition}) {
         this.name = name;
-        this.columns = columns;
-        this.c = mapValues(columns, (column, propertyName) => {
-            const bound = new BoundColumn({
+        this.columnDefinitions = columnDefinitions;
+        this.c = mapValues(columnDefinitions, column => {
+            return new BoundColumn({
                 ...column._,
                 selectable: this
             });
-            if (propertyName !== bound.key()) {
-                return bound.as(propertyName);
-            } else {
-                return bound;
-            }
         });
     }
 
     get primaryKey() {
-        // TODO: remove cast
-        const columns = filter(this.c, column => (column as BoundColumn).primaryKey);
+        const columns = filter(this.c, column => column.primaryKey);
         if (columns.length === 0) {
             return null;
         } else {
@@ -65,7 +59,7 @@ class AliasedTable implements Selectable {
     constructor(table: Table, alias: string) {
         this._table = table;
         this._alias = alias;
-        this.c = mapValues(table.columns, column => new BoundColumn({
+        this.c = mapValues(table.columnDefinitions, column => new BoundColumn({
             ...column._,
             selectable: this
         }));
@@ -80,8 +74,8 @@ class AliasedTable implements Selectable {
     }
 }
 
-export function column(options: Partial<TableColumnOptions> & Pick<TableColumnOptions, "name">) {
-    return new TableColumn({
+export function column(options: Partial<TableColumnDefinitionOptions> & Pick<TableColumnDefinitionOptions, "name">) {
+    return new TableColumnDefinition({
         nullable: false,
         primaryKey: false,
         type: "int",
@@ -89,17 +83,17 @@ export function column(options: Partial<TableColumnOptions> & Pick<TableColumnOp
     });
 }
 
-interface TableColumnOptions {
+interface TableColumnDefinitionOptions {
     name: string;
     nullable: boolean;
     primaryKey: boolean;
     type: string;
 }
 
-export class TableColumn {
-    public readonly _: TableColumnOptions;
+export class TableColumnDefinition {
+    public readonly _: TableColumnDefinitionOptions;
 
-    constructor(options: TableColumnOptions) {
+    constructor(options: TableColumnDefinitionOptions) {
         this._ = options;
     }
 
@@ -139,7 +133,7 @@ class CreateTable {
     }
 
     compile(compiler: Compiler): string {
-        const columns = map(this._table.columns, column => column.compileCreate(compiler)).join(", ");
+        const columns = map(this._table.columnDefinitions, column => column.compileCreate(compiler)).join(", ");
         return "CREATE TABLE " + this._table.name + " (" + columns + ")";
     }
 }

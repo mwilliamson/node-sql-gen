@@ -2,19 +2,7 @@ import type {Compiler} from "./compiler";
 import type {Selectable} from "./index";
 
 export abstract class Expression {
-    as(alias: string) {
-        return new AliasedColumn(this, alias);
-    }
-
-    compileColumn(compiler: Compiler) {
-        return this.compileExpression(compiler);
-    }
-
     abstract compileExpression(compiler: Compiler): string;
-}
-
-export abstract class NamedExpression extends Expression {
-    abstract key(): string;
 }
 
 interface BoundColumnOptions {
@@ -23,12 +11,16 @@ interface BoundColumnOptions {
     selectable: Selectable;
 }
 
-export class BoundColumn extends NamedExpression {
+export class BoundColumn extends Expression {
     private readonly _: BoundColumnOptions;
 
     constructor(options: BoundColumnOptions) {
         super();
         this._ = options;
+    }
+
+    get name(): string {
+        return this._.name;
     }
 
     get primaryKey(): boolean {
@@ -42,40 +34,8 @@ export class BoundColumn extends NamedExpression {
         });
     }
 
-    key(): string {
-        return this._.name;
-    }
-
     compileExpression(compiler: Compiler): string {
         return this._.selectable.compileReference(compiler) + "." + this._.name;
-    }
-
-    compileColumn(compiler: Compiler): string {
-        return this.compileExpression(compiler);
-    }
-}
-
-// TODO: override as()
-class AliasedColumn extends NamedExpression {
-    private readonly _expression: Expression;
-    private readonly _alias: string;
-
-    constructor(expression: Expression, alias: string) {
-        super();
-        this._expression = expression;
-        this._alias = alias;
-    }
-
-    key(): string {
-        return this._alias;
-    }
-
-    compileExpression(compiler: Compiler): string {
-        return this._expression.compileExpression(compiler);
-    }
-
-    compileColumn(compiler: Compiler): string {
-        return this.compileExpression(compiler) + " AS " + this._alias;
     }
 }
 
@@ -121,10 +81,6 @@ class BoundParameter extends Expression {
         compiler.addParam(this._.value);
         return "?";
     }
-}
-
-export function toColumn(value: unknown): Expression {
-    return toExpression(value);
 }
 
 export function toExpression(value: unknown): Expression {
