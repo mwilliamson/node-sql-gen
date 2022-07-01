@@ -82,8 +82,7 @@ class AliasedTable implements Selectable {
 
 export function column(options: Partial<TableColumnOptions> & Pick<TableColumnOptions, "name">) {
     return new TableColumn({
-        // TODO: default to false
-        nullable: true,
+        nullable: false,
         primaryKey: false,
         type: "int",
         ...options
@@ -111,7 +110,7 @@ export class TableColumn {
             sql += " PRIMARY KEY";
         }
 
-        if (!this._.nullable) {
+        if (!this._.nullable && !this._.primaryKey) {
             sql += " NOT NULL";
         }
 

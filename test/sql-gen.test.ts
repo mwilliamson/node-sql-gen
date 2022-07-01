@@ -150,13 +150,18 @@ test("create table", () => {
         title: sql.column({name: "title", type: sql.types.string})
     });
     const query = sql.createTable(Author);
-    assertQuery(query, "CREATE TABLE author (id INTEGER, title VARCHAR)");
+    assertQuery(query, "CREATE TABLE author (id INTEGER NOT NULL, title VARCHAR NOT NULL)");
 });
 
 test("create columns", {
     "primary key": () => {
         const column = sql.column({name: "id", type: sql.types.int, primaryKey: true});
         assertColumn(column, "id INTEGER PRIMARY KEY");
+    },
+
+    "nullable": () => {
+        const column = sql.column({name: "id", type: sql.types.int, nullable: true});
+        assertColumn(column, "id INTEGER");
     },
 
     "not null": () => {
