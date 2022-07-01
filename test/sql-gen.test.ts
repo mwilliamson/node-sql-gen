@@ -12,7 +12,7 @@ const test = require("./test")(module)
 
 test("select single column from table", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const query = sql.from(Author).select({id: Author.c.id});
     assertQuery(query, "SELECT author.id AS id FROM author");
@@ -20,8 +20,8 @@ test("select single column from table", () => {
 
 test("select multiple columns from table", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"}),
-        title: sql.column({name: "title"})
+        id: sql.column({name: "id", type: sql.types.int}),
+        title: sql.column({name: "title", type: sql.types.string})
     });
     const query = sql.from(Author).select({id: Author.c.id, title: Author.c.title});
     assertQuery(query, "SELECT author.id AS id, author.title AS title FROM author");
@@ -29,7 +29,7 @@ test("select multiple columns from table", () => {
 
 test("select column with alias", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const query = sql.from(Author).select({author_id: Author.c.id});
     assertQuery(query, "SELECT author.id AS author_id FROM author");
@@ -37,7 +37,7 @@ test("select column with alias", () => {
 
 test("select from table with alias", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const aliasedAuthor = Author.as("a");
     const query = sql.from(aliasedAuthor).select({id: aliasedAuthor.c.id});
@@ -46,11 +46,11 @@ test("select from table with alias", () => {
 
 test("inner join", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const Book = sql.table("book", {
-        id: sql.column({name: "id"}),
-        authorId: sql.column({name: "author_id"})
+        id: sql.column({name: "id", type: sql.types.int}),
+        authorId: sql.column({name: "author_id", type: sql.types.int})
     });
     const query = sql
         .from(Author)
@@ -61,7 +61,7 @@ test("inner join", () => {
 
 test("select from subquery", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const authors = sql.from(Author).select({id: Author.c.id}).subquery();
     const query = sql.from(authors).select({id: authors.c.id});
@@ -70,7 +70,7 @@ test("select from subquery", () => {
 
 test("select from subquery with aliased columns", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const authors = sql.from(Author).select({authorId: Author.c.id}).subquery();
     const query = sql.from(authors).select({authorId: authors.c.authorId});
@@ -79,10 +79,10 @@ test("select from subquery with aliased columns", () => {
 
 test("select from multiple subqueries", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const Book = sql.table("book", {
-        author_id: sql.column({name: "author_id"})
+        author_id: sql.column({name: "author_id", type: sql.types.int})
     });
     const authors = sql.from(Author).select({id: Author.c.id}).subquery();
     const books = sql.from(Book).select({author_id: Book.c.author_id}).subquery();
@@ -95,7 +95,7 @@ test("select from multiple subqueries", () => {
 
 test("select distinct", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const query = sql.from(Author).select({id: Author.c.id}).distinct();
     assertQuery(query, "SELECT DISTINCT author.id AS id FROM author");
@@ -103,7 +103,7 @@ test("select distinct", () => {
 
 test("select bound parameter", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const query = sql.from(Author).select({x: sql.boundParameter({value: 1})});
     assertQuery(query, "SELECT ? AS x FROM author", 1);
@@ -111,7 +111,7 @@ test("select bound parameter", () => {
 
 test("literal in select is coerced to bound parameter", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const query = sql.from(Author).select({x: 1});
     assertQuery(query, "SELECT ? AS x FROM author", 1);
@@ -119,7 +119,7 @@ test("literal in select is coerced to bound parameter", () => {
 
 test("single where call", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const query = sql.from(Author).select({id: Author.c.id}).where(sql.eq(Author.c.id, 1));
     assertQuery(query, "SELECT author.id AS id FROM author WHERE author.id = ?", 1);
@@ -127,7 +127,7 @@ test("single where call", () => {
 
 test("multiple where calls generate single WHERE clause with ANDs", () => {
     const Author = sql.table("author", {
-        id: sql.column({name: "id"})
+        id: sql.column({name: "id", type: sql.types.int})
     });
     const query = sql.from(Author)
         .select({id: Author.c.id})

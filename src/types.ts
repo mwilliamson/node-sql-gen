@@ -1,6 +1,13 @@
+export interface SqlType {
+    name: string;
+}
+
+const int: SqlType = {name: "INTEGER"};
+const string: SqlType = {name: "VARCHAR"};
+
 const types = {
-    int: "INTEGER",
-    string: "VARCHAR"
+    int: int,
+    string: string,
 };
 
 export default types;

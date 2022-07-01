@@ -3,6 +3,7 @@ import { filter, map, mapValues } from "lodash";
 import { Compiler } from "./compiler";
 import { BoundColumn, Expression } from "./expressions";
 import { Selectable } from "./selectables";
+import { SqlType } from "./types";
 
 export function table(name: string, columnDefinitions: {[name: string]: TableColumnDefinition}) {
     return new Table(name, columnDefinitions);
@@ -69,11 +70,10 @@ class AliasedTable implements Selectable {
     }
 }
 
-export function column(options: Partial<TableColumnDefinitionOptions> & Pick<TableColumnDefinitionOptions, "name">) {
+export function column(options: Partial<TableColumnDefinitionOptions> & Pick<TableColumnDefinitionOptions, "name" | "type">) {
     return new TableColumnDefinition({
         nullable: false,
         primaryKey: false,
-        type: "int",
         ...options
     });
 }
@@ -82,7 +82,7 @@ interface TableColumnDefinitionOptions {
     name: string;
     nullable: boolean;
     primaryKey: boolean;
-    type: string;
+    type: SqlType;
 }
 
 export class TableColumnDefinition {
@@ -93,7 +93,7 @@ export class TableColumnDefinition {
     }
 
     compileCreate(compiler: Compiler): string {
-        let sql = this._.name + " " + this._.type;
+        let sql = this._.name + " " + this._.type.name;
 
         if (this._.primaryKey) {
             sql += " PRIMARY KEY";
