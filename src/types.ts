@@ -1,13 +1,9 @@
-export interface SqlType<T> {
-    name: string;
-}
-
-const int: SqlType<number> = {name: "INTEGER"};
-const string: SqlType<string> = {name: "VARCHAR"};
+export type SqlType = "BOOLEAN" | "INTEGER" | "VARCHAR";
 
 const types = {
-    int: int,
-    string: string,
+    boolean: "BOOLEAN" as const,
+    int: "INTEGER" as const,
+    string: "VARCHAR" as const,
 };
 
 export default types;

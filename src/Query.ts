@@ -1,28 +1,28 @@
-import { fromPairs, map, mapValues } from "lodash";
+import { map, mapValues } from "lodash";
 
 import { Compiler } from "./compiler";
-import { BoundColumn, Expression, toExpression } from "./expressions";
-import type { Selectable } from "./selectables";
+import { BoundColumn, Expression } from "./expressions";
+import type { OutputColumnTypes, Selectable, SelectableColumns } from "./selectables";
 
-interface QueryOptions {
-    columns: {[name: string]: Expression};
-    conditions: Array<Expression>;
+interface QueryOptions<TColumnTypes extends OutputColumnTypes> {
+    columns: {[Property in keyof TColumnTypes]: Expression<TColumnTypes[Property]>};
+    // TODO: alias boolean sql type
+    conditions: Array<Expression<"BOOLEAN">>;
     distinct: boolean;
     joins: Array<Join>;
-    selectable: Selectable;
+    selectable: Selectable<OutputColumnTypes>;
 }
 
 interface Join {
-    condition: Expression;
-    selectable: Selectable;
+    condition: Expression<"BOOLEAN">;
+    selectable: Selectable<OutputColumnTypes>;
 }
 
-export default class Query {
-    private readonly _: QueryOptions;
+export default class Query<TColumnTypes extends OutputColumnTypes> {
+    private readonly _: QueryOptions<TColumnTypes>;
 
-    constructor(options: Partial<QueryOptions> & Pick<QueryOptions, "selectable">) {
+    constructor(options: Partial<QueryOptions<TColumnTypes>> & Pick<QueryOptions<TColumnTypes>, "columns" | "selectable">) {
         this._ = {
-            columns: {},
             conditions: [],
             distinct: false,
             joins: [],
@@ -30,14 +30,14 @@ export default class Query {
         };
     }
 
-    _copy(options: Partial<QueryOptions>) {
+    _copy(options: Partial<QueryOptions<TColumnTypes>>) {
         return new Query({
             ...this._,
             ...options
         });
     }
 
-    join(selectable: Selectable, condition: Expression) {
+    join(selectable: Selectable<TColumnTypes>, condition: Expression<"BOOLEAN">) {
         const join = {selectable, condition};
         return this._copy({
             joins: this._.joins.concat([join])
@@ -45,22 +45,25 @@ export default class Query {
     }
 
     // TODO: tighten types
-    select(columns: {[name: string]: unknown}) {
-        return this._copy({columns: mapValues(columns, toExpression)});
+    select<TNewColumnTypes extends OutputColumnTypes>(columns: {[Property in keyof TNewColumnTypes]: Expression<TNewColumnTypes[Property]>}) {
+        return new Query<TNewColumnTypes>({
+            ...this._,
+            columns: columns
+        });
     }
 
     distinct() {
         return this._copy({distinct: true});
     }
 
-    where(condition: Expression) {
+    where(condition: Expression<"BOOLEAN">) {
         return this._copy({
             conditions: this._.conditions.concat(condition)
         });
     }
 
-    subquery() {
-        return new SubQuery(this, Object.keys(this._.columns));
+    subquery(): SubQuery<TColumnTypes> {
+        return new SubQuery(this, this._.columns);
     }
 
     compile(compiler: Compiler) {
@@ -100,22 +103,21 @@ export default class Query {
 
 let subQueryId = 0;
 
-class SubQuery implements Selectable {
+class SubQuery<TColumnTypes extends OutputColumnTypes> implements Selectable<TColumnTypes> {
     private readonly _id: number;
-    private readonly _query: Query;
-    public readonly c: {[name: string]: BoundColumn};
+    private readonly _query: Query<TColumnTypes>;
+    public readonly c: SelectableColumns<TColumnTypes>;
 
-    constructor(query: Query, columns: Array<string>) {
+    constructor(query: Query<TColumnTypes>, columns: {[Property in keyof TColumnTypes]: Expression<TColumnTypes[Property]>}) {
         this._id = subQueryId++;
         this._query = query;
-        this.c = fromPairs(columns.map(column => [
-            column,
-            new BoundColumn({
-                selectable: this,
-                name: column,
-                primaryKey: false,
-            })
-        ]));
+        // TODO: remove cast
+        this.c = mapValues(columns, (column, name) => new BoundColumn({
+            selectable: this,
+            name: name,
+            primaryKey: false,
+            sqlType: column.sqlType
+        })) as SelectableColumns<TColumnTypes>;
     }
 
     compileReference(compiler: Compiler): string {

@@ -1,28 +1,32 @@
 import { filter, map, mapValues } from "lodash";
 
 import { Compiler } from "./compiler";
-import { BoundColumn, Expression } from "./expressions";
-import { Selectable } from "./selectables";
+import { BoundColumn } from "./expressions";
+import { OutputColumnTypes, Selectable, SelectableColumns } from "./selectables";
 import { SqlType } from "./types";
 
-export function table(name: string, columnDefinitions: {[name: string]: TableColumnDefinition}) {
+export function table<TColumnTypes extends OutputColumnTypes>(name: string, columnDefinitions: ColumnDefinitions<TColumnTypes>) {
     return new Table(name, columnDefinitions);
 }
 
-class Table implements Selectable {
-    public readonly name: string;
-    public readonly columnDefinitions: {[name: string]: TableColumnDefinition};
-    public readonly c: {[name: string]: BoundColumn}
+type ColumnDefinitions<TColumnTypes extends OutputColumnTypes> = {[Property in keyof TColumnTypes]: TableColumnDefinition<TColumnTypes[Property]>};
 
-    constructor(name: string, columnDefinitions: {[name: string]: TableColumnDefinition}) {
+class Table<TColumnTypes extends OutputColumnTypes> implements Selectable<TColumnTypes> {
+    public readonly name: string;
+    public readonly columnDefinitions: ColumnDefinitions<TColumnTypes>;
+    public readonly c: SelectableColumns<TColumnTypes>;
+
+    constructor(name: string, columnDefinitions: ColumnDefinitions<TColumnTypes>) {
         this.name = name;
         this.columnDefinitions = columnDefinitions;
+        // TODO: remove cast
         this.c = mapValues(columnDefinitions, column => {
             return new BoundColumn({
                 ...column._,
-                selectable: this
+                selectable: this,
+                sqlType: column._.type,
             });
-        });
+        }) as SelectableColumns<TColumnTypes>;
     }
 
     get primaryKey() {
@@ -34,7 +38,7 @@ class Table implements Selectable {
         }
     }
 
-    as(alias: string): AliasedTable {
+    as(alias: string): AliasedTable<TColumnTypes> {
         return new AliasedTable(this, alias);
     }
 
@@ -47,18 +51,20 @@ class Table implements Selectable {
     }
 }
 
-class AliasedTable implements Selectable {
-    private readonly _table: Table;
+class AliasedTable<TColumnTypes extends OutputColumnTypes> implements Selectable<TColumnTypes> {
+    private readonly _table: Table<TColumnTypes>;
     private readonly _alias: string;
-    public readonly c: {[name: string]: Expression}
+    public readonly c: SelectableColumns<TColumnTypes>;
 
-    constructor(table: Table, alias: string) {
+    constructor(table: Table<TColumnTypes>, alias: string) {
         this._table = table;
         this._alias = alias;
+        // TODO: remove cast
         this.c = mapValues(table.columnDefinitions, column => new BoundColumn({
             ...column._,
-            selectable: this
-        }));
+            selectable: this,
+            sqlType: column._.type,
+        })) as SelectableColumns<TColumnTypes>;
     }
 
     compileReference(): string {
@@ -70,7 +76,7 @@ class AliasedTable implements Selectable {
     }
 }
 
-export function column(options: Partial<TableColumnDefinitionOptions> & Pick<TableColumnDefinitionOptions, "name" | "type">) {
+export function column<SqlType>(options: Partial<TableColumnDefinitionOptions<SqlType>> & Pick<TableColumnDefinitionOptions<SqlType>, "name" | "type">) {
     return new TableColumnDefinition({
         nullable: false,
         primaryKey: false,
@@ -78,22 +84,22 @@ export function column(options: Partial<TableColumnDefinitionOptions> & Pick<Tab
     });
 }
 
-interface TableColumnDefinitionOptions {
+interface TableColumnDefinitionOptions<SqlType> {
     name: string;
     nullable: boolean;
     primaryKey: boolean;
-    type: SqlType<unknown>;
+    type: SqlType;
 }
 
-export class TableColumnDefinition {
-    public readonly _: TableColumnDefinitionOptions;
+export class TableColumnDefinition<SqlType> {
+    public readonly _: TableColumnDefinitionOptions<SqlType>;
 
-    constructor(options: TableColumnDefinitionOptions) {
+    constructor(options: TableColumnDefinitionOptions<SqlType>) {
         this._ = options;
     }
 
     compileCreate(compiler: Compiler): string {
-        let sql = this._.name + " " + this._.type.name;
+        let sql = this._.name + " " + this._.type;
 
         if (this._.primaryKey) {
             sql += " PRIMARY KEY";
@@ -107,14 +113,14 @@ export class TableColumnDefinition {
     }
 }
 
-export function createTable(table: Table) {
+export function createTable(table: Table<OutputColumnTypes>) {
     return new CreateTable(table);
 }
 
 class CreateTable {
-    private readonly _table: Table;
+    private readonly _table: Table<OutputColumnTypes>;
 
-    constructor(table: Table) {
+    constructor(table: Table<OutputColumnTypes>) {
         this._table = table;
     }
 

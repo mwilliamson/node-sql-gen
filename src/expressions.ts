@@ -1,21 +1,29 @@
 import type {Compiler} from "./compiler";
-import type {Selectable} from "./selectables";
+import type {OutputColumnTypes, Selectable} from "./selectables";
+import { SqlType } from "./types";
 
-export abstract class Expression {
+export abstract class Expression<T = SqlType> {
+    public readonly sqlType: T;
+
+    constructor(sqlType: T) {
+        this.sqlType = sqlType;
+    }
+
     abstract compileExpression(compiler: Compiler): string;
 }
 
-interface BoundColumnOptions {
+interface BoundColumnOptions<T> {
     name: string;
     primaryKey: boolean;
-    selectable: Selectable;
+    selectable: Selectable<OutputColumnTypes>;
+    sqlType: T;
 }
 
-export class BoundColumn extends Expression {
-    private readonly _: BoundColumnOptions;
+export class BoundColumn<T> extends Expression<T> {
+    private readonly _: BoundColumnOptions<T>;
 
-    constructor(options: BoundColumnOptions) {
-        super();
+    constructor(options: BoundColumnOptions<T>) {
+        super(options.sqlType);
         this._ = options;
     }
 
@@ -27,7 +35,7 @@ export class BoundColumn extends Expression {
         return this._.primaryKey;
     }
 
-    _copy(options: Partial<BoundColumnOptions>): BoundColumn {
+    _copy(options: Partial<BoundColumnOptions<T>>): BoundColumn<T> {
         return new BoundColumn({
             ...this._,
             ...options
@@ -39,21 +47,20 @@ export class BoundColumn extends Expression {
     }
 }
 
-export function eq(left: unknown, right: unknown) {
-    return new BinaryOperation("=", left, right);
+export function eq(left: Expression, right: Expression): Expression<"BOOLEAN"> {
+    return new BinaryOperation("BOOLEAN", "=", left, right);
 }
 
-class BinaryOperation extends Expression {
+class BinaryOperation<T> extends Expression<T> {
     private readonly _operator: string;
     private readonly _left: Expression;
     private readonly _right: Expression;
 
-    // TODO: tighter typing of left and right
-    constructor(operator: string, left: unknown, right: unknown) {
-        super();
+    constructor(sqlType: T, operator: string, left: Expression, right: Expression) {
+        super(sqlType);
         this._operator = operator;
-        this._left = toExpression(left);
-        this._right = toExpression(right);
+        this._left = left;
+        this._right = right;
     }
 
     compileExpression(compiler: Compiler): string {
@@ -61,34 +68,25 @@ class BinaryOperation extends Expression {
     }
 }
 
-export function boundParameter(options: BoundParameterOptions) {
+export function boundParameter<T>(options: BoundParameterOptions<T>) {
     return new BoundParameter(options);
 }
 
-interface BoundParameterOptions {
+interface BoundParameterOptions<T> {
+    sqlType: T;
     value: unknown;
 }
 
-class BoundParameter extends Expression {
-    private readonly _: BoundParameterOptions;
+class BoundParameter<T> extends Expression<T> {
+    private readonly _: BoundParameterOptions<T>;
 
-    constructor(options: BoundParameterOptions) {
-        super();
+    constructor(options: BoundParameterOptions<T>) {
+        super(options.sqlType);
         this._ = options;
     }
 
     compileExpression(compiler: Compiler) {
         compiler.addParam(this._.value);
         return "?";
-    }
-}
-
-export function toExpression(value: unknown): Expression {
-    if (value === undefined) {
-        throw new Error("expression cannot be undefined");
-    } else if (value instanceof Expression) {
-        return value;
-    } else {
-        return boundParameter({value});
     }
 }

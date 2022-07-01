@@ -2,8 +2,8 @@ import assert from "assert";
 
 import sql, { TableColumnDefinition } from "../";
 import { Compiler } from "../lib/compiler";
-import { BoundColumn } from "../lib/expressions";
 import { Statement } from "../lib/statements";
+import { SqlType } from "../lib/types";
 
 const test = require("./test")(module)
 
@@ -105,7 +105,7 @@ test("select bound parameter", () => {
     const Author = sql.table("author", {
         id: sql.column({name: "id", type: sql.types.int})
     });
-    const query = sql.from(Author).select({x: sql.boundParameter({value: 1})});
+    const query = sql.from(Author).select({x: sql.int(1)});
     assertQuery(query, "SELECT ? AS x FROM author", 1);
 });
 
@@ -113,7 +113,7 @@ test("literal in select is coerced to bound parameter", () => {
     const Author = sql.table("author", {
         id: sql.column({name: "id", type: sql.types.int})
     });
-    const query = sql.from(Author).select({x: 1});
+    const query = sql.from(Author).select({x: sql.int(1)});
     assertQuery(query, "SELECT ? AS x FROM author", 1);
 });
 
@@ -121,7 +121,7 @@ test("single where call", () => {
     const Author = sql.table("author", {
         id: sql.column({name: "id", type: sql.types.int})
     });
-    const query = sql.from(Author).select({id: Author.c.id}).where(sql.eq(Author.c.id, 1));
+    const query = sql.from(Author).select({id: Author.c.id}).where(sql.eq(Author.c.id, sql.int(1)));
     assertQuery(query, "SELECT author.id AS id FROM author WHERE author.id = ?", 1);
 });
 
@@ -131,8 +131,8 @@ test("multiple where calls generate single WHERE clause with ANDs", () => {
     });
     const query = sql.from(Author)
         .select({id: Author.c.id})
-        .where(sql.eq(Author.c.id, 1))
-        .where(sql.eq(Author.c.id, 2));
+        .where(sql.eq(Author.c.id, sql.int(1)))
+        .where(sql.eq(Author.c.id, sql.int(2)));
     assertQuery(query, "SELECT author.id AS id FROM author WHERE author.id = ? AND author.id = ?", 1, 2);
 });
 
@@ -206,7 +206,7 @@ test("README.md", () => {
 
     const query = sql.from(Book)
         .join(Author, sql.eq(Book.c.authorId, Author.c.id))
-        .where(sql.eq(Book.c.genre, "comedy"))
+        .where(sql.eq(Book.c.genre, sql.string("comedy")))
         .select({
             name: Author.c.name,
             title: Book.c.title
@@ -215,7 +215,7 @@ test("README.md", () => {
     assertQuery(query, "SELECT author.name AS name, book.title AS title FROM book JOIN author ON book.author_id = author.id WHERE book.genre = ?", "comedy");
 });
 
-function assertColumn(column: TableColumnDefinition, expectedSql: string) {
+function assertColumn(column: TableColumnDefinition<SqlType>, expectedSql: string) {
     const compiler = new Compiler();
     const text = column.compileCreate(compiler);
     assert.equal(text, expectedSql);
