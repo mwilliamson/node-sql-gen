@@ -1,73 +1,96 @@
-import { fromPairs, mapValues } from "lodash";
+import { fromPairs } from "lodash";
 
-import { BoundColumn, toColumn } from "./expressions";
+import { Compiler } from "./compiler";
+import { BoundColumn, Expression, NamedExpression, toColumn } from "./expressions";
+import type { Selectable } from "./index";
+
+interface QueryOptions {
+    columns: Array<Expression>;
+    conditions: Array<Expression>;
+    distinct: boolean;
+    joins: Array<Join>;
+    selectable: Selectable;
+}
+
+interface Join {
+    condition: Expression;
+    selectable: Selectable;
+}
 
 export default class Query {
-    constructor({...options}) {
-        this._ = options;
-        this._.joins = this._.joins || [];
-        this._.conditions = this._.conditions || [];
+    private readonly _: QueryOptions;
+
+    constructor(options: Partial<QueryOptions> & Pick<QueryOptions, "selectable">) {
+        this._ = {
+            columns: [],
+            conditions: [],
+            distinct: false,
+            joins: [],
+            ...options
+        };
     }
-    
-    _copy(options) {
+
+    _copy(options: Partial<QueryOptions>) {
         return new Query({
             ...this._,
             ...options
         });
     }
-    
-    join(selectable, condition) {
+
+    join(selectable: Selectable, condition: Expression) {
         const join = {selectable, condition};
         return this._copy({
             joins: this._.joins.concat([join])
         });
     }
-    
-    select(...columns) {
+
+    // TODO: tighten types
+    select(...columns: Array<unknown>) {
         return this._copy({columns: columns.map(toColumn)});
     }
-    
+
     distinct() {
         return this._copy({distinct: true});
     }
-    
-    where(condition) {
+
+    where(condition: Expression) {
         return this._copy({
             conditions: this._.conditions.concat(condition)
         });
     }
-    
+
     subquery() {
-        return new SubQuery(this, this._.columns.map(column => column.key()));
+        // TODO: remove cast
+        return new SubQuery(this, this._.columns.map(column => (column as NamedExpression).key()));
     }
-    
-    compile(compiler) {
+
+    compile(compiler: Compiler) {
         let sql = "SELECT ";
         if (this._.distinct) {
             sql += "DISTINCT ";
         }
         sql += this._compileColumns(compiler);
-        
+
         sql += " FROM " + this._.selectable.compileSelectable(compiler) + this._compileJoins(compiler);
-        
+
         sql += this._compileWhere(compiler);
-        
+
         return sql;
     }
-    
-    _compileColumns(compiler) {
+
+    _compileColumns(compiler: Compiler) {
         return this._.columns.map(column => column.compileColumn(compiler)).join(", ");
     }
-    
-    _compileJoins(compiler) {
+
+    _compileJoins(compiler: Compiler) {
         return this._.joins.map(join => this._compileJoin(join, compiler)).join(" ");
     }
-    
-    _compileJoin(join, compiler) {
+
+    _compileJoin(join: Join, compiler: Compiler) {
         return " JOIN " + join.selectable.compileSelectable(compiler) + " ON " + join.condition.compileExpression(compiler);
     }
-    
-    _compileWhere(compiler) {
+
+    _compileWhere(compiler: Compiler) {
         if (this._.conditions.length === 0) {
             return "";
         } else {
@@ -78,24 +101,29 @@ export default class Query {
 
 let subQueryId = 0;
 
-class SubQuery {
-    constructor(query, columns) {
+class SubQuery implements Selectable {
+    private readonly _id: number;
+    private readonly _query: Query;
+    public readonly c: {[name: string]: BoundColumn};
+
+    constructor(query: Query, columns: Array<string>) {
         this._id = subQueryId++;
         this._query = query;
         this.c = fromPairs(columns.map(column => [
             column,
             new BoundColumn({
                 selectable: this,
-                name: column
+                name: column,
+                primaryKey: false,
             })
         ]));
     }
-    
-    compileReference(compiler) {
+
+    compileReference(compiler: Compiler): string {
         return "anon_" + compiler.getAnonymousId(this._id);
     }
-    
-    compileSelectable(compiler) {
+
+    compileSelectable(compiler: Compiler): string {
         const selectableId = compiler.getAnonymousId(this._id);
         // TODO: handle subquery used multiple times in same query
         return "(" + this._query.compile(compiler) + ") AS anon_" + selectableId;

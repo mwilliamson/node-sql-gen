@@ -1,15 +1,21 @@
+import type { Statement } from "./statements";
+
 export class Compiler {
+    private readonly _anonymousMap: {[elementId: number]: number};
+    private _anonymousCounter: number;
+    public params: Array<unknown>;
+
     constructor() {
         this._anonymousMap = {};
         this._anonymousCounter = 0;
         this.params = [];
     }
-    
-    addParam(value) {
+
+    addParam(value: unknown) {
         this.params.push(value);
     }
-    
-    getAnonymousId(elementId) {
+
+    getAnonymousId(elementId: number): number {
         if (this._anonymousMap[elementId] === undefined) {
             const anonymousId = this._anonymousCounter++;
             this._anonymousMap[elementId] = anonymousId;
@@ -18,8 +24,8 @@ export class Compiler {
     }
 }
 
-export function compile(query) {
+export function compile(statement: Statement) {
     const compiler = new Compiler();
-    const text = query.compile(compiler);
+    const text = statement.compile(compiler);
     return {text, params: compiler.params};
 }

@@ -1,7 +1,9 @@
 import assert from "assert";
 
-import sql from "../";
+import sql, { TableColumn } from "../";
 import { Compiler } from "../lib/compiler";
+import { BoundColumn } from "../lib/expressions";
+import { Statement } from "../lib/statements";
 
 const test = require("./test")(module)
 
@@ -156,7 +158,7 @@ test("create columns", {
         const column = sql.column({name: "id", type: sql.types.int, primaryKey: true});
         assertColumn(column, "id INTEGER PRIMARY KEY");
     },
-    
+
     "not null": () => {
         const column = sql.column({name: "id", type: sql.types.int, nullable: false});
         assertColumn(column, "id INTEGER NOT NULL");
@@ -177,7 +179,7 @@ test("table primary key property", {
             name: sql.column({name: "name", type: sql.types.string})
         });
         assert.deepEqual(
-            Author.primaryKey.columns.map(column => column.key()),
+            Author.primaryKey?.columns.map(column => (column as BoundColumn).key()),
             ["id"]
         );
     },
@@ -187,7 +189,7 @@ test("table primary key property", {
             name: sql.column({name: "name", type: sql.types.string, primaryKey: true})
         });
         assert.deepEqual(
-            Author.primaryKey.columns.map(column => column.key()),
+            Author.primaryKey?.columns.map(column => (column as BoundColumn).key()),
             ["id", "name"]
         );
     }
@@ -213,14 +215,14 @@ test("README.md", () => {
     assertQuery(query, "SELECT author.name, book.title FROM book JOIN author ON book.author_id = author.id WHERE book.genre = ?", "comedy");
 });
 
-function assertColumn(column, expectedSql) {
+function assertColumn(column: TableColumn, expectedSql: string) {
     const compiler = new Compiler();
     const text = column.compileCreate(compiler);
     assert.equal(text, expectedSql);
     assert.deepEqual(compiler.params, []);
 }
 
-function assertQuery(query, expectedSql, ...expectedParams) {
+function assertQuery(query: Statement, expectedSql: string, ...expectedParams: Array<unknown>) {
     assert.deepEqual(
         sql.compile(query),
         {
