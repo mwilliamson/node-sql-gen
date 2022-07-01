@@ -31,7 +31,7 @@ We can then define a query:
 const query = sql.from(Book)
     .join(Author, sql.eq(Book.c.authorId, Author.c.id))
     .where(sql.eq(Book.c.genre, "comedy"))
-    .select(Author.c.name, Book.c.title);
+    .select({name: Author.c.name, title: Book.c.title});
 ```
 
 We can use `compile()` to turn a query into a string and parameters,
@@ -40,7 +40,7 @@ ready to pass into a database connection:
 ```javascript
 sql.compile(query)
 //  {
-//      "text": "SELECT author.name, book.title FROM book JOIN author ON book.author_id = author.id WHERE book.genre = ?",
+//      "text": "SELECT author.name AS name, book.title AS title FROM book JOIN author ON book.author_id = author.id WHERE book.genre = ?",
 //      "params": ["comedy"]
 //  }
 ```
@@ -75,7 +75,7 @@ Returns an instance of `Table`, which has the following properties:
 
 * `c`: the columns of the table, which can then be used in generating queries.
   For instance:
-  
+
   ```javascript
   const Author = table("author", {
       id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
@@ -86,7 +86,7 @@ Returns an instance of `Table`, which has the following properties:
 
 * `as(alias)`: create a from clause for this table with an alternate name,
   as specified by `alias`. For instance:
-  
+
   ```javascript
   const Author = table("author", {
       id: sql.column({name: "id", type: sql.types.int, primaryKey: true}),
@@ -115,7 +115,7 @@ Options should be an object with the following properties:
   set to `true` to mark this column as part of the table's primary key.
   Defaults to false.
 
-* `nullable` (optional): 
+* `nullable` (optional):
   set to `false` to mark this column as `NOT NULL`.
   Defaults to true.
 
