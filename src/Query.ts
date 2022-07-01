@@ -2,7 +2,7 @@ import { fromPairs, map, mapValues } from "lodash";
 
 import { Compiler } from "./compiler";
 import { BoundColumn, Expression, toExpression } from "./expressions";
-import type { Selectable } from "./index";
+import type { Selectable } from "./selectables";
 
 interface QueryOptions {
     columns: {[name: string]: Expression};

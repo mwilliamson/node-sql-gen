@@ -1,5 +1,5 @@
 import type {Compiler} from "./compiler";
-import type {Selectable} from "./index";
+import type {Selectable} from "./selectables";
 
 export abstract class Expression {
     abstract compileExpression(compiler: Compiler): string;
